@@ -1,0 +1,159 @@
+# region imports
+from AlgorithmImports import *
+# endregion
+
+class HipsterRedGoshawk(QCAlgorithm):
+
+    def Initialize(self):
+        self.SetStartDate(2020, 1, 1)  # Set Start Date
+        self.SetCash(100000)  # Set Strategy Cash
+        self.SetBrokerageModel(BrokerageName.OandaBrokerage, AccountType.Margin)
+        self.security = self.AddForex("GBPAUD", Resolution.Minute).Symbol
+        self.minutefastema = self.EMA(self.security, 9, Resolution.Minute)
+        self.minutemediumema = self.EMA(self.security, 21, Resolution.Minute)
+        self.minuteslowema = self.EMA(self.security, 50, Resolution.Minute)
+        self.fifteen_minute_fastema = ExponentialMovingAverage(9)
+        self.fifteen_minute_mediumema = ExponentialMovingAverage(21)
+        self.fifteen_minute_slowema = ExponentialMovingAverage(50)
+        self.RegisterIndicator(self.security, self.fifteen_minute_fastema, timedelta(minutes = 15))
+        self.RegisterIndicator(self.security, self.fifteen_minute_mediumema, timedelta(minutes = 15))
+        self.RegisterIndicator(self.security, self.fifteen_minute_slowema, timedelta(minutes = 15))
+        self.hourfastema = self.EMA(self.security, 9, Resolution.Hour)
+        self.hourmediumema = self.EMA(self.security, 21, Resolution.Hour)
+        self.hourslowema = self.EMA(self.security, 50, Resolution.Hour)
+        self.fourhour_fastema = ExponentialMovingAverage(9)
+        self.fourhour_mediumema = ExponentialMovingAverage(21)
+        self.fourhour_slowema = ExponentialMovingAverage(50)
+        self.RegisterIndicator(self.security, self.fourhour_fastema, timedelta(hours = 4))
+        self.RegisterIndicator(self.security, self.fourhour_mediumema, timedelta(hours = 4))
+        self.RegisterIndicator(self.security, self.fourhour_slowema, timedelta(hours = 4))
+        self.minutestoch = self.STO(self.security, 21, Resolution.Minute)
+        self.window = RollingWindow[QuoteBar](5)
+        self.minutefastemaWin = RollingWindow[IndicatorDataPoint](5)
+        self.minutemediumemaWin = RollingWindow[IndicatorDataPoint](5)
+        self.minuteslowemaWin = RollingWindow[IndicatorDataPoint](5)
+        self.minutefastema.Updated += self.MinuteFastEmaUpdate 
+        self.minutemediumema.Updated += self.MinuteMediumEmaUpdate 
+        self.minuteslowema.Updated += self.MinuteSlowEmaUpdate 
+    def MinuteFastEmaUpdate(self, sender, updated):
+        self.minutefastemaWin.Add(updated)
+    def MinuteMediumEmaUpdate(self, sender, updated):
+        self.minutemediumemaWin.Add(updated)
+    def MinuteSlowEmaUpdate(self, sender, updated):
+        self.minuteslowemaWin.Add(updated)
+    
+    
+
+
+
+
+    def OnData(self, data: Slice):
+        self.window.Add(data[self.security])
+        if not (self.window.IsReady and self.minutefastemaWin.IsReady and self.minutemediumemaWin.IsReady and self.minuteslowemaWin.IsReady 
+        and self.minutefastema.IsReady and self.minutemediumema.IsReady and self.minuteslowema.IsReady and self.minutestoch and self.fifteen_minute_fastema.IsReady
+        and self.fifteen_minute_mediumema.IsReady and self.fifteen_minute_slowema.IsReady and self.hourfastema.IsReady and self.hourmediumema.IsReady and self.hourslowema.IsReady
+        and self.fourhour_fastema.IsReady and self.fourhour_mediumema.IsReady and self.fourhour_slowema.IsReady):
+            return 
+        if self.minutestoch.IsReady:
+            minute_stoch_current_value = self.minutestoch.Current.Value
+        minute_stoch_current_value = self.minutestoch.Current.Value
+
+
+        stoUpperThreshold = 80 
+        stoLowerThreshold = 20 
+
+        price = self.Securities[self.security].Price 
+
+        order_quantity = self.CalculateOrderQuantity(self.security, 3.5)
+
+        currPriceClose = self.window[0].Close
+        prevPriceClose1 = self.window[1].Close
+        prevPriceClose2 = self.window[2].Close
+        prevPriceClose3 = self.window[3].Close
+        prevPriceClose4 = self.window[4].Close
+
+        currPriceOpen = self.window[0].Open
+        prevPriceOpen1 = self.window[1].Open
+        prevPriceOpen2 = self.window[2].Open
+        prevPriceOpen3 = self.window[3].Open
+        prevPriceOpen4 = self.window[4].Open
+
+        currPriceHigh = self.window[0].High 
+        prevPriceHigh1 = self.window[1].High 
+        prevPriceHigh2 = self.window[2].High 
+        prevPriceHigh3 = self.window[3].High 
+        prevPriceHigh4 = self.window[4].High 
+
+        currPriceLow = self.window[0].Low
+        prevPriceLow1 = self.window[1].Low
+        prevPriceLow2 = self.window[2].Low
+        prevPriceLow3 = self.window[3].Low
+        prevPriceLow4 = self.window[4].Low
+
+        currMinuteFastEma = self.minutefastemaWin[0].Value 
+        prevMinuteFastEma1 = self.minutefastemaWin[1].Value 
+        prevMinuteFastEma2 = self.minutefastemaWin[2].Value 
+        prevMinuteFastEma3 = self.minutefastemaWin[3].Value 
+        prevMinuteFastEma4 = self.minutefastemaWin[4].Value 
+
+        currMinuteMediumEma = self.minutemediumemaWin[0].Value 
+        prevMinuteMediumEma1 = self.minutemediumemaWin[1].Value 
+        prevMinuteMediumEma2 = self.minutemediumemaWin[2].Value 
+        prevMinuteMediumEma3 = self.minutemediumemaWin[3].Value 
+        prevMinuteMediumEma4 = self.minutemediumemaWin[4].Value 
+
+        currMinuteSlowEma = self.minuteslowemaWin[0].Value 
+        prevMinuteSlowEma1 = self.minuteslowemaWin[1].Value 
+        prevMinuteSlowEma2 = self.minuteslowemaWin[2].Value 
+        prevMinuteSlowEma3 = self.minuteslowemaWin[3].Value 
+        prevMinuteSlowEma4 = self.minuteslowemaWin[4].Value 
+
+        Is_long = False 
+        Is_short = False 
+        Already_In_Trade = False 
+        current_minuteemas_stacked_up = False 
+        current_minuteemas_stacked_down = False 
+        current_fifteen_minuteemas_stacked_up = False 
+        current_fifteen_minuteemas_stacked_down = False 
+        current_houremas_stacked_up = False 
+        current_houremas_stacked_down = False 
+        current_fourhour_emas_stacked_up = False 
+        current_fourhour_emas_stacked_down = False 
+        currentprice_above_minutefastema = False 
+        currentprice_below_minutefastema = False 
+        currentprice_above_fifteen_minutefastema = False 
+        currentprice_below_fifteen_minutefastema = False 
+        currentprice_above_hourfastema = False 
+        currentprice_below_hourfastema = False 
+        currentprice_above_fourhour_fastema = False 
+        currentprice_below_fourhour_fastema = False
+        overbought_on_minutestoch = False
+        oversold_on_minutestoch = False
+
+        bullish_3candle_formation_off_minutemediumema = False 
+        bearish_3candle_formation_off_minutemediumema = False 
+
+        if currPriceClose >= prevPriceOpen2 and prevPriceClose2 < prevMinuteFastEma2 and prevPriceClose1 <= prevMinuteMediumEma1 and prevPriceOpen1 > prevMinuteMediumEma1 and prevPriceOpen2 >= prevMinuteFastEma2:
+            bullish_3candle_formation_off_minutemediumema = True 
+        if currPriceClose <= prevPriceOpen2 and prevPriceClose2  > prevMinuteFastEma2 and prevPriceClose1 >= prevMinuteMediumEma1 and prevPriceOpen1 < prevMinuteMediumEma1 and prevPriceOpen2 <= prevMinuteFastEma2:
+            bearish_3candle_formation_off_minutemediumema = True 
+        if self.Portfolio[self.security].IsLong:
+            Is_long = True 
+        if self.Portfolio[self.security].IsShort:
+            Is_short = True 
+        if Is_long or Is_short:
+            Already_In_Trade = True 
+        if currMinuteFastEma > currMinuteMediumEma:
+            current_minuteemas_stacked_up = True 
+        if currMinuteFastEma < currMinuteMediumEma:
+            current_minuteemas_stacked_down = True
+        if self.fifteen_minute_fastema.Current.Value > self.fifteen_minute_mediumema.Current.Value and self.fifteen_minute_mediumema.Current.Value > self.fifteen_minute_slowema.Current.Value:
+            current_fifteen_minuteemas_stacked_up = True 
+        if self.fifteen_minute_fastema.Current.Value < self.fifteen_minute_mediumema.Current.Value and self.fifteen_minute_mediumema.Current.Value < self.fifteen_minute_slowema.Current.Value:
+            current_fifteen_minuteemas_stacked_down = True 
+        if self.hourfastema.Current.Value > self.hourmediumema.Current.Value and self.hourmediumema.Current.Value > self.hourslowema.Current.Value:
+            current_houremas_stacked_up = True 
+        if self.hourfastema.Current.Value < self.hourmediumema.Current.Value and self.hourmediumema.Current.Value < self.hourslowema.Current.Value:
+            current_houremas_stacked_down = True 
+        if self.fourhour_fastema.Current.Value > self.fourhour_mediumema.Current.Value and self.fourhour_mediumema.Current.Value > self.fourhour_slowema.Current.Value:
+            current_f
